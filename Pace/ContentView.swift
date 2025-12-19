@@ -9,15 +9,8 @@ import SceneKit
 import SwiftUI
 
 struct ContentView: View {
-
-    private let animationFile = "Walking.dae"
-
     var body: some View {
-        SceneView(
-            scene: CharacterSceneService.createWalkingScene(fileName: animationFile),
-            options: [.autoenablesDefaultLighting]
-        )
-        .ignoresSafeArea()
+        Navigation()
     }
 }
 

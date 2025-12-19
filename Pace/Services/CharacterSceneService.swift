@@ -7,6 +7,7 @@
 
 
 import SceneKit
+import SwiftUI
 import UIKit
 
 struct CharacterSceneConfig {
@@ -15,14 +16,14 @@ struct CharacterSceneConfig {
     var mirrorCharacter: Bool = true
     var cameraOffset: SCNVector3 = SCNVector3(x: -4.0, y: 1.0, z: 1)
     var lookAtYOffset: Float = -0.15
-    var fieldOfView: CGFloat = 45
+    var fieldOfView: CGFloat = 41
     var backgroundColor: UIColor = .white
-    
+
     static var sideViewWalking: CharacterSceneConfig {
         CharacterSceneConfig(
             animationFileName: "Walking.dae",
             mirrorCharacter: true,
-            cameraOffset: SCNVector3(x: -4.0, y: 1.0, z: 1)
+            cameraOffset: SCNVector3(x: -3, y: 0, z: 0)
         )
     }
 }
@@ -39,7 +40,7 @@ class CharacterSceneService {
             targetHeight: config.characterHeight,
             mirror: config.mirrorCharacter
         )
- 
+
         let targetNode = findHipNode(in: containerNode) ?? containerNode
         setupFollowCamera(
             in: scene,
@@ -66,7 +67,7 @@ class CharacterSceneService {
         let characterHeight = maxBound.y - minBound.y
         let characterWidth = maxBound.x - minBound.x
         let characterDepth = maxBound.z - minBound.z
-        
+
         let centerX = (minBound.x + maxBound.x) / 2
         let centerZ = (minBound.z + maxBound.z) / 2
 
@@ -81,7 +82,7 @@ class CharacterSceneService {
             child.removeFromParentNode()
             containerNode.addChildNode(child)
         }
-        
+
         let xScale = mirror ? -scaleFactor : scaleFactor
         containerNode.scale = SCNVector3(xScale, scaleFactor, scaleFactor)
 
@@ -99,12 +100,11 @@ class CharacterSceneService {
         in scene: SCNScene,
         tracking targetNode: SCNNode,
         config: CharacterSceneConfig
-    ) {        
+    ) {
         let lookAtTarget = SCNNode()
         lookAtTarget.name = "CameraTarget"
         scene.rootNode.addChildNode(lookAtTarget)
 
-        
         let cameraNode = SCNNode()
         cameraNode.name = "FollowCamera"
         cameraNode.camera = SCNCamera()
@@ -116,11 +116,9 @@ class CharacterSceneService {
         let cameraOffset = config.cameraOffset
         let lookAtYOffset = config.lookAtYOffset
 
-        
         let lookAtConstraint = SCNLookAtConstraint(target: lookAtTarget)
         lookAtConstraint.isGimbalLockEnabled = true
 
-        
         let followConstraint = SCNTransformConstraint.positionConstraint(
             inWorldSpace: true
         ) { (node, currentPosition) -> SCNVector3 in
@@ -142,12 +140,11 @@ class CharacterSceneService {
                 characterPos.z
             )
         }
-        
+
         lookAtTarget.constraints = [targetFollowConstraint]
         cameraNode.constraints = [followConstraint, lookAtConstraint]
     }
 
-    
     private static func findHipNode(in node: SCNNode) -> SCNNode? {
         let hipNames = [
             "mixamorig:Hips", "Hips", "pelvis", "Pelvis",
@@ -169,4 +166,21 @@ class CharacterSceneService {
         }
         return nil
     }
+}
+
+#Preview {
+    let config = CharacterSceneConfig(
+        animationFileName: "Walking.dae",
+        characterHeight: 1.5,
+        mirrorCharacter: true,
+        cameraOffset: SCNVector3(x: -4, y: 0, z: 0),
+        lookAtYOffset: -0.15,
+        fieldOfView: 35,
+        backgroundColor: .white
+    )
+
+    return SceneView(
+        scene: CharacterSceneService.createScene(with: config),
+        options: [.autoenablesDefaultLighting]
+    )
 }
