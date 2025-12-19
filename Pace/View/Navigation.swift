@@ -15,6 +15,12 @@ struct Navigation: View {
                     Image(systemName: "house")
                     Text("Home")
                 }
+            
+            ActivitesView()
+                .tabItem {
+                    Image(systemName: "figure.walk")
+                    Text("Activities")
+                }
         }
     }
 }
