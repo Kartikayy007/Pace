@@ -8,12 +8,19 @@
 import SwiftUI
 
 struct ActivityRingView: View {
-    let stepsProgress: Double = 0.75
-    let distanceProgress: Double = 0.45
-    let caloriesProgress: Double = 0.90
-    let steps: Int = 7500
-    let distance: Double = 4.5
-    let calories: Int = 320
+    var pedometerManager: PedometerManager
+
+    private var stepsProgress: Double {
+        Double(pedometerManager.steps) / 10000.0
+    }
+
+    private var distanceProgress: Double {
+        pedometerManager.distance / 5000.0
+    }
+
+    private var caloriesProgress: Double {
+        min(pedometerManager.currentCadence / 100.0, 1.0)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -28,22 +35,22 @@ struct ActivityRingView: View {
                 StatRow(
                     icon: "figure.walk",
                     iconColor: .red,
-                    value: steps.formatted(),
+                    value: pedometerManager.steps.formatted(),
                     label: "Steps"
                 )
 
                 StatRow(
                     icon: "location.fill",
                     iconColor: .green,
-                    value: String(format: "%.1f km", distance),
+                    value: String(format: "%.1f km", pedometerManager.distance / 1000),
                     label: "Distance"
                 )
 
                 StatRow(
                     icon: "flame.fill",
                     iconColor: .orange,
-                    value: "\(calories)",
-                    label: "Calories"
+                    value: "\(Int(pedometerManager.currentCadence))",
+                    label: "Cadence"
                 )
             }
         }
@@ -52,6 +59,6 @@ struct ActivityRingView: View {
 }
 
 #Preview {
-    ActivityRingView()
-        .background(Color.white)
+    ActivityRingView(pedometerManager: PedometerManager())
+        .background(Color.black)
 }
