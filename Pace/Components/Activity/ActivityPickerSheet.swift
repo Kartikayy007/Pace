@@ -9,14 +9,14 @@ import SwiftUI
 
 struct ActivityPickerSheet: View {
     let activities: [Activity]
-    @Binding var selectedActivity: String
+    @Binding var selectedActivity: Activity
     @Binding var isPresented: Bool
 
     var body: some View {
         NavigationStack {
             List(activities) { activity in
                 Button(action: {
-                    selectedActivity = activity.title
+                    selectedActivity = activity
                     isPresented = false
                 }) {
                     HStack(spacing: 16) {
@@ -31,7 +31,7 @@ struct ActivityPickerSheet: View {
 
                         Spacer()
 
-                        if selectedActivity == activity.title {
+                        if selectedActivity.title == activity.title {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(.green)
                         }

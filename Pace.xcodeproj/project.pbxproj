@@ -10,9 +10,22 @@
 		938EA7442EF552FA00C247AE /* Pace.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pace.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		93A92EBD2EF9838A00FAFB5D /* Exceptions for "Pace" folder in "Pace" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 938EA7432EF552FA00C247AE /* Pace */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		938EA7462EF552FA00C247AE /* Pace */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				93A92EBD2EF9838A00FAFB5D /* Exceptions for "Pace" folder in "Pace" target */,
+			);
 			path = Pace;
 			sourceTree = "<group>";
 		};
@@ -257,7 +270,9 @@
 				DEVELOPMENT_TEAM = 3V9DH6TBUG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "To display your active calories burned";
+				INFOPLIST_FILE = Pace/Info.plist;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "To display your activity data and workout metrics";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "To save your workouts and contribute to your Move ring";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "To show your location on the map";
 				INFOPLIST_KEY_NSMotionUsageDescription = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -293,7 +308,9 @@
 				DEVELOPMENT_TEAM = 3V9DH6TBUG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "To display your active calories burned";
+				INFOPLIST_FILE = Pace/Info.plist;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "To display your activity data and workout metrics";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "To save your workouts and contribute to your Move ring";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "To show your location on the map";
 				INFOPLIST_KEY_NSMotionUsageDescription = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

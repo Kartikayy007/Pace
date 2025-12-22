@@ -24,12 +24,19 @@ struct Navigation: View {
                     Text("Activities")
                 }
             
+            HistoryView()
+                .tabItem {
+                    Image(systemName: "clock.arrow.circlepath")
+                    Text("History")
+                }
+            
             SettingsView()
                 .tabItem {
                     Image(systemName: "gearshape")
                     Text("Settings")
                 }
         }
+        .tint(.red)
         .preferredColorScheme(settings.appearanceMode.colorScheme)
     }
 }

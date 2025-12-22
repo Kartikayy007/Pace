@@ -7,11 +7,52 @@
 
 import MapKit
 import SwiftUI
+import UIKit
 
 struct ActivitesView: View {
     @State private var viewModel = ActivityViewModel()
 
+    private var isSessionActive: Bool {
+        viewModel.sessionState.isSessionActive
+    }
+    
     var body: some View {
+        idleView
+            .task {
+                await viewModel.requestAuthorization()
+            }
+            .onAppear {
+                viewModel.requestLocationPermission()
+            }
+            .fullScreenCover(isPresented: .init(
+                get: { isSessionActive },
+                set: { if !$0 { viewModel.endSession() } }
+            )) {
+                sessionView
+            }
+            .sheet(isPresented: $viewModel.showActivityPicker) {
+            ActivityPickerSheet(
+                activities: viewModel.activities,
+                selectedActivity: $viewModel.selectedActivity,
+                isPresented: $viewModel.showActivityPicker
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $viewModel.showSettingsSheet) {
+            ActivitySettingsSheet(
+                countdownEnabled: $viewModel.countdownEnabled,
+                countdownSeconds: $viewModel.countdownSeconds,
+                distanceGoal: $viewModel.distanceGoal,
+                timeGoal: $viewModel.timeGoal,
+                isPresented: $viewModel.showSettingsSheet
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+    }
+    
+    private var idleView: some View {
         ZStack {
             ActivityMapBackground(cameraPosition: $viewModel.cameraPosition)
 
@@ -20,7 +61,7 @@ struct ActivitesView: View {
                     Image(systemName: viewModel.currentActivityIcon)
                         .font(.system(size: 32, weight: .semibold))
                         .foregroundColor(viewModel.currentActivityColor)
-                    Text(viewModel.selectedActivity)
+                    Text(viewModel.selectedActivity.title)
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                     Spacer()
                 }
@@ -59,6 +100,8 @@ struct ActivitesView: View {
 
                 HStack(spacing: 24) {
                     Button(action: {
+                        let generator = UIImpactFeedbackGenerator(style: .light)
+                        generator.impactOccurred()
                         viewModel.showActivityPicker = true
                     }) {
                         Image(systemName: "figure.run")
@@ -68,7 +111,11 @@ struct ActivitesView: View {
                             .clipShape(Circle())
                     }.glassEffect(.regular.interactive())
 
-                    Button(action: {}) {
+                    Button(action: {
+                        let generator = UIImpactFeedbackGenerator(style: .heavy)
+                        generator.impactOccurred()
+                        viewModel.startSession()
+                    }) {
                         Text("Start")
                             .font(.system(size: 24, weight: .bold, design: .rounded))
                             .italic()
@@ -86,6 +133,8 @@ struct ActivitesView: View {
                     }
                     
                     Button(action: {
+                        let generator = UIImpactFeedbackGenerator(style: .light)
+                        generator.impactOccurred()
                         viewModel.showSettingsSheet = true
                     }) {
                         Image(systemName: "gearshape.fill")
@@ -99,28 +148,20 @@ struct ActivitesView: View {
                 .padding(.bottom, 80)
             }
         }
-        .onAppear {
-            viewModel.requestLocationPermission()
-        }
-        .sheet(isPresented: $viewModel.showActivityPicker) {
-            ActivityPickerSheet(
-                activities: viewModel.activities,
-                selectedActivity: $viewModel.selectedActivity,
-                isPresented: $viewModel.showActivityPicker
+    }
+    
+    @ViewBuilder
+    private var sessionView: some View {
+        switch viewModel.sessionState {
+        case .idle:
+            EmptyView()
+        case .countdown(let count):
+            CountdownView(count: count, activityColor: viewModel.currentActivityColor)
+        case .active, .paused:
+            ActiveSessionView(
+                viewModel: viewModel,
+                onEnd: { viewModel.endSession() }
             )
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
-        }
-        .sheet(isPresented: $viewModel.showSettingsSheet) {
-            ActivitySettingsSheet(
-                countdownEnabled: $viewModel.countdownEnabled,
-                countdownSeconds: $viewModel.countdownSeconds,
-                distanceGoal: $viewModel.distanceGoal,
-                timeGoal: $viewModel.timeGoal,
-                isPresented: $viewModel.showSettingsSheet
-            )
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
         }
     }
 }
