@@ -7,20 +7,25 @@
 
 import SceneKit
 import SwiftUI
+import UIKit
 
 struct HomeView: View {
     @Environment(\.colorScheme) var colorScheme
-    @State private var pedometerManager = PedometerManager()
+    @State private var viewModel = HomeViewModel()
 
     private var sceneConfig: CharacterSceneConfig {
-        CharacterSceneConfig(
+        let bgColor: UIColor = colorScheme == .dark ? .black : .white
+        return CharacterSceneConfig(
             animationFileName: "Walking1.dae",
             characterHeight: 1.5,
             mirrorCharacter: false,
             cameraOffset: SCNVector3(x: 0, y: 0.5, z: 4),
             lookAtYOffset: -0.1,
             fieldOfView: 35,
-            backgroundColor: colorScheme == .dark ? .black : .white
+            backgroundColor: bgColor,
+            showFloor: true,
+            floorColor: bgColor,
+            showShadow: true
         )
     }
 
@@ -29,10 +34,8 @@ struct HomeView: View {
     }
 
     var body: some View {
-        NavigationStack {
             GeometryReader { geometry in
                 ZStack {
-                    
                     VStack {
                         Spacer()
                             .frame(height: geometry.size.height * 0.2)
@@ -48,17 +51,15 @@ struct HomeView: View {
                         }
                     }
 
-                    
                     HStack {
                         Spacer()
-                        ActivityRingView(pedometerManager: pedometerManager)
+                        ActivityRingView(viewModel: viewModel)
                     }
                     .padding()
                     .padding(.trailing, 12)
 
-                    
                     VStack {
-                        LivePaceChart(stepData: pedometerManager.hourlySteps)
+                        LivePaceChart(stepData: viewModel.hourlySteps)
                             .padding(.horizontal)
                             .padding(.top, 100)
 
@@ -68,15 +69,12 @@ struct HomeView: View {
             }
             .background(backgroundColor)
             .ignoresSafeArea()
-            .navigationTitle("Pace")
-            .navigationBarTitleDisplayMode(.inline)
             .onAppear {
-                pedometerManager.startTracking()
+                viewModel.startTracking()
             }
             .onDisappear {
-                pedometerManager.stopTracking()
+                viewModel.stopTracking()
             }
-        }
     }
 }
 

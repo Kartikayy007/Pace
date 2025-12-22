@@ -17,13 +17,22 @@ struct CharacterSceneConfig {
     var cameraOffset: SCNVector3 = SCNVector3(x: -4.0, y: 1.0, z: 1)
     var lookAtYOffset: Float = -0.15
     var fieldOfView: CGFloat = 41
-    var backgroundColor: UIColor = .white
+    var backgroundColor: UIColor = .systemBackground
+    var showFloor: Bool = true
+    var floorColor: UIColor = .systemBackground
+    var showShadow: Bool = true
+    
+    var groundTextureName: String? = nil
+    var scrollSpeed: Float = 0.5
+    var textureScale: Float = 4.0
 
     static var sideViewWalking: CharacterSceneConfig {
         CharacterSceneConfig(
             animationFileName: "Walking.dae",
             mirrorCharacter: true,
-            cameraOffset: SCNVector3(x: -3, y: 0, z: 0)
+            cameraOffset: SCNVector3(x: -3, y: 0, z: 0),
+            showFloor: true,
+            showShadow: true
         )
     }
 }
@@ -40,8 +49,21 @@ class CharacterSceneService {
             targetHeight: config.characterHeight,
             mirror: config.mirrorCharacter
         )
+        
+        if config.showShadow {
+            enableShadowCasting(on: containerNode)
+        }
 
         let targetNode = findHipNode(in: containerNode) ?? containerNode
+        
+        if config.showFloor {
+            setupFloor(in: scene, config: config)
+        }
+        
+        if config.showShadow {
+            setupLighting(in: scene, tracking: targetNode)
+        }
+        
         setupFollowCamera(
             in: scene,
             tracking: targetNode,
@@ -165,6 +187,148 @@ class CharacterSceneService {
             }
         }
         return nil
+    }
+    
+    private static func setupFloor(in scene: SCNScene, config: CharacterSceneConfig) {
+        if let textureName = config.groundTextureName,
+           let textureImage = UIImage(named: textureName) {
+            setupTexturedFloor(in: scene, config: config, texture: textureImage)
+        } else {
+            setupSolidColorFloor(in: scene, config: config)
+        }
+    }
+    
+    private static func setupTexturedFloor(in scene: SCNScene, config: CharacterSceneConfig, texture: UIImage) {
+        let floorGeometry = SCNPlane(width: 10, height: 10)
+        
+        let floorMaterial = SCNMaterial()
+        floorMaterial.diffuse.contents = texture
+        floorMaterial.diffuse.wrapS = .repeat
+        floorMaterial.diffuse.wrapT = .repeat
+        
+        let scale = config.textureScale
+        floorMaterial.diffuse.contentsTransform = SCNMatrix4MakeScale(scale, scale, 1)
+        
+        floorMaterial.lightingModel = .physicallyBased
+        floorMaterial.roughness.contents = 0.8
+        floorGeometry.materials = [floorMaterial]
+        
+        let floorNode = SCNNode(geometry: floorGeometry)
+        floorNode.name = "TexturedFloor"
+        floorNode.eulerAngles.x = -.pi / 2
+        floorNode.position = SCNVector3(0, 0, 0)
+        floorNode.castsShadow = false
+        
+        scene.rootNode.addChildNode(floorNode)
+        
+        let scrollSpeed = config.scrollSpeed
+        let cycleDuration: TimeInterval = 1.0 / Double(scrollSpeed)
+        
+        let scrollOneCycle = SCNAction.customAction(duration: cycleDuration) { node, elapsedTime in
+            let progress = Float(elapsedTime / cycleDuration)
+            let transform = SCNMatrix4Mult(
+                SCNMatrix4MakeScale(scale, scale, 1),
+                SCNMatrix4MakeTranslation(0, progress, 0)
+            )
+            floorMaterial.diffuse.contentsTransform = transform
+        }
+        
+        let repeatScroll = SCNAction.repeatForever(scrollOneCycle)
+        floorNode.runAction(repeatScroll)
+        
+        if config.showShadow {
+            let shadowPlane = SCNPlane(width: 10, height: 10)
+            let shadowMaterial = SCNMaterial()
+            shadowMaterial.diffuse.contents = UIColor.clear
+            shadowMaterial.lightingModel = .shadowOnly
+            shadowMaterial.writesToDepthBuffer = false
+            shadowPlane.materials = [shadowMaterial]
+            
+            let shadowNode = SCNNode(geometry: shadowPlane)
+            shadowNode.name = "ShadowPlane"
+            shadowNode.eulerAngles.x = -.pi / 2
+            shadowNode.position = SCNVector3(0, 0.001, 0)
+            shadowNode.castsShadow = false
+            
+            scene.rootNode.addChildNode(shadowNode)
+        }
+    }
+    
+    private static func setupSolidColorFloor(in scene: SCNScene, config: CharacterSceneConfig) {
+        let floorGeometry = SCNPlane(width: 100, height: 100)
+        
+        let floorMaterial = SCNMaterial()
+        floorMaterial.diffuse.contents = config.floorColor
+        floorMaterial.lightingModel = .constant
+        floorMaterial.writesToDepthBuffer = true
+        floorMaterial.readsFromDepthBuffer = true
+        floorGeometry.materials = [floorMaterial]
+        
+        let floorNode = SCNNode(geometry: floorGeometry)
+        floorNode.name = "Floor"
+        floorNode.eulerAngles.x = -.pi / 2
+        floorNode.position = SCNVector3(0, 0, 0)
+        floorNode.castsShadow = false
+        
+        scene.rootNode.addChildNode(floorNode)
+        
+        if config.showShadow {
+            let shadowPlane = SCNPlane(width: 100, height: 100)
+            let shadowMaterial = SCNMaterial()
+            shadowMaterial.diffuse.contents = UIColor.clear
+            shadowMaterial.lightingModel = .shadowOnly
+            shadowMaterial.writesToDepthBuffer = false
+            shadowPlane.materials = [shadowMaterial]
+            
+            let shadowNode = SCNNode(geometry: shadowPlane)
+            shadowNode.name = "ShadowPlane"
+            shadowNode.eulerAngles.x = -.pi / 2
+            shadowNode.position = SCNVector3(0, 0.001, 0)
+            shadowNode.castsShadow = false
+            
+            scene.rootNode.addChildNode(shadowNode)
+        }
+    }
+    
+    private static func setupLighting(in scene: SCNScene, tracking targetNode: SCNNode) {
+        let directionalLight = SCNLight()
+        directionalLight.type = .directional
+        directionalLight.intensity = 1000
+        directionalLight.color = UIColor.white
+        directionalLight.castsShadow = true
+        directionalLight.shadowMode = .deferred
+        directionalLight.shadowColor = UIColor.black.withAlphaComponent(0.5)
+        directionalLight.shadowRadius = 3.0
+        directionalLight.shadowSampleCount = 8
+        directionalLight.shadowMapSize = CGSize(width: 2048, height: 2048)
+        directionalLight.orthographicScale = 5
+        directionalLight.zNear = 0.1
+        directionalLight.zFar = 100
+        
+        let lightNode = SCNNode()
+        lightNode.name = "DirectionalLight"
+        lightNode.light = directionalLight
+        lightNode.position = SCNVector3(x: -5, y: 10, z: 5)
+        lightNode.eulerAngles = SCNVector3(x: -.pi / 3, y: -.pi / 4, z: 0)
+        
+        scene.rootNode.addChildNode(lightNode)
+        
+        let ambientLight = SCNLight()
+        ambientLight.type = .ambient
+        ambientLight.intensity = 400
+        ambientLight.color = UIColor.white
+        
+        let ambientNode = SCNNode()
+        ambientNode.name = "AmbientLight"
+        ambientNode.light = ambientLight
+        scene.rootNode.addChildNode(ambientNode)
+    }
+    
+    private static func enableShadowCasting(on node: SCNNode) {
+        node.castsShadow = true
+        for child in node.childNodes {
+            enableShadowCasting(on: child)
+        }
     }
 }
 

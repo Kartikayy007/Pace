@@ -10,70 +10,101 @@ import SwiftUI
 
 struct LivePaceChart: View {
     let stepData: [StepDataPoint]
+    
+    private var totalSteps: Int {
+        stepData.reduce(0) { $0 + $1.steps }
+    }
+    
+    private var currentHourSteps: Int {
+        let currentHour = Calendar.current.component(.hour, from: Date())
+        return stepData.first { $0.hour == currentHour }?.steps ?? 0
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Today's Activity")
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .foregroundColor(.gray)
-                .tracking(1)
+            
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text("\(currentHourSteps)")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundColor(.red)
+                Text("STEPS")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundColor(.red)
+            }
 
+            
             Chart(stepData) { point in
                 BarMark(
                     x: .value("Hour", point.hour),
                     y: .value("Steps", point.steps)
                 )
                 .foregroundStyle(Color.red)
-                .cornerRadius(2)
+                .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
             }
             .chartXAxis {
-                AxisMarks(values: [0, 6, 12, 18, 23]) { value in
+                AxisMarks(values: [0, 6, 12, 18]) { value in
                     AxisValueLabel {
                         if let hour = value.as(Int.self) {
-                            Text("\(hour)")
-                                .font(.system(size: 9, design: .rounded))
-                                .foregroundColor(.gray)
+                            Text(formatHour(hour))
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundColor(.secondary)
                         }
                     }
-                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [2]))
-                        .foregroundStyle(Color.gray.opacity(0.3))
                 }
             }
             .chartYAxis {
-                AxisMarks(position: .trailing) { value in
-                    AxisValueLabel {
-                        if let steps = value.as(Int.self) {
-                            Text("\(steps)")
-                                .font(.system(size: 9, design: .rounded))
-                                .foregroundColor(.gray)
-                        }
-                    }
-                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
-                        .foregroundStyle(Color.gray.opacity(0.2))
+                AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { _ in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [2, 2]))
+                        .foregroundStyle(Color.gray.opacity(0.3))
                 }
             }
             .chartXScale(domain: 0...23)
-            .frame(height: 100)
+            .frame(height: 80)
 
-            Text("steps per hour")
-                .font(.system(size: 10, weight: .medium, design: .rounded))
-                .foregroundColor(.gray.opacity(0.7))
+            HStack(spacing: 4) {
+                Text("TOTAL")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundColor(.red)
+                Text("\(totalSteps.formatted())")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundColor(.red)
+                Text("STEPS")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundColor(.red)
+            }
         }
         .padding()
+    }
+    
+    private func formatHour(_ hour: Int) -> String {
+        if hour == 0 {
+            return "12:00"
+        } else if hour < 12 {
+            return "\(hour):00"
+        } else if hour == 12 {
+            return "12:00"
+        } else {
+            return "\(hour - 12):00"
+        }
     }
 }
 
 #Preview {
-    var mockData: [StepDataPoint] = []
-    for hour in 0..<24 {
-        let steps = [
-            0, 200, 500, 100, 50, 0, 800, 1200, 900, 400, 300, 600, 1500, 800, 200, 100, 0, 300,
-            500, 200, 100, 50, 0, 0,
-        ][hour]
-        mockData.append(StepDataPoint(hour: hour, steps: steps))
+    let mockData: [StepDataPoint] = (0..<24).map { hour in
+        let steps: Int
+        if hour < 6 {
+            steps = 0
+        } else if hour < 12 {
+            steps = Int.random(in: 0...200)
+        } else if hour < 18 {
+            steps = Int.random(in: 500...2000)
+        } else {
+            steps = Int.random(in: 200...1000)
+        }
+        return StepDataPoint(hour: hour, steps: steps)
     }
 
-    return LivePaceChart(stepData: mockData)
+    LivePaceChart(stepData: mockData)
         .padding()
         .background(Color.black)
 }

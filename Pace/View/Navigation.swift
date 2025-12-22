@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct Navigation: View {
+    private var settings = SettingsManager.shared
+    
     var body: some View {
         TabView {
             HomeView()
@@ -21,6 +23,13 @@ struct Navigation: View {
                     Image(systemName: "figure.walk")
                     Text("Activities")
                 }
+            
+            SettingsView()
+                .tabItem {
+                    Image(systemName: "gearshape")
+                    Text("Settings")
+                }
         }
+        .preferredColorScheme(settings.appearanceMode.colorScheme)
     }
 }

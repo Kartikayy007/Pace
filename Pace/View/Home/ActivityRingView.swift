@@ -8,18 +8,23 @@
 import SwiftUI
 
 struct ActivityRingView: View {
-    var pedometerManager: PedometerManager
+    var viewModel: HomeViewModel
+    private var settings = SettingsManager.shared
+    
+    init(viewModel: HomeViewModel) {
+        self.viewModel = viewModel
+    }
 
     private var stepsProgress: Double {
-        Double(pedometerManager.steps) / 10000.0
+        Double(viewModel.steps) / Double(settings.dailyStepsGoal)
     }
 
     private var distanceProgress: Double {
-        pedometerManager.distance / 5000.0
+        viewModel.distance / settings.dailyDistanceGoal
     }
 
     private var caloriesProgress: Double {
-        min(pedometerManager.currentCadence / 100.0, 1.0)
+        min(viewModel.calories / settings.dailyCaloriesGoal, 1.0)
     }
 
     var body: some View {
@@ -35,22 +40,22 @@ struct ActivityRingView: View {
                 StatRow(
                     icon: "figure.walk",
                     iconColor: .red,
-                    value: pedometerManager.steps.formatted(),
+                    value: viewModel.steps.formatted(),
                     label: "Steps"
                 )
 
                 StatRow(
                     icon: "location.fill",
                     iconColor: .green,
-                    value: String(format: "%.1f km", pedometerManager.distance / 1000),
+                    value: settings.formatDistance(viewModel.distance),
                     label: "Distance"
                 )
 
                 StatRow(
                     icon: "flame.fill",
                     iconColor: .orange,
-                    value: "\(Int(pedometerManager.currentCadence))",
-                    label: "Cadence"
+                    value: "\(Int(viewModel.calories))",
+                    label: "Calories"
                 )
             }
         }
@@ -59,6 +64,6 @@ struct ActivityRingView: View {
 }
 
 #Preview {
-    ActivityRingView(pedometerManager: PedometerManager())
+    ActivityRingView(viewModel: HomeViewModel())
         .background(Color.black)
 }

@@ -257,6 +257,7 @@
 				DEVELOPMENT_TEAM = 3V9DH6TBUG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "To display your active calories burned";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "To show your location on the map";
 				INFOPLIST_KEY_NSMotionUsageDescription = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -292,6 +293,7 @@
 				DEVELOPMENT_TEAM = 3V9DH6TBUG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "To display your active calories burned";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "To show your location on the map";
 				INFOPLIST_KEY_NSMotionUsageDescription = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
