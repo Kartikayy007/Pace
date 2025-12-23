@@ -9,11 +9,11 @@ import SwiftUI
 
 struct SettingsView: View {
     private var settings = SettingsManager.shared
-    
+
     @State private var stepGoal: Double = 10000
     @State private var distanceGoal: Double = 5.0
     @State private var calorieGoal: Double = 500
-    
+
     var body: some View {
         NavigationStack {
             List {
@@ -35,7 +35,7 @@ struct SettingsView: View {
                             }
                     }
                     .padding(.vertical, 4)
-                    
+
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Image(systemName: "location.fill")
@@ -53,7 +53,7 @@ struct SettingsView: View {
                             }
                     }
                     .padding(.vertical, 4)
-                    
+
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Image(systemName: "flame.fill")
@@ -74,14 +74,18 @@ struct SettingsView: View {
                 } header: {
                     Text("Goals")
                 } footer: {
-                    Text("Set your daily activity goals. The rings on the home screen show your progress toward these goals.")
+                    Text(
+                        "Set your daily activity goals. The rings on the home screen show your progress toward these goals."
+                    )
                 }
-                
+
                 Section {
-                    Picker(selection: Binding(
-                        get: { settings.unitSystem },
-                        set: { settings.unitSystem = $0 }
-                    )) {
+                    Picker(
+                        selection: Binding(
+                            get: { settings.unitSystem },
+                            set: { settings.unitSystem = $0 }
+                        )
+                    ) {
                         ForEach(UnitSystem.allCases, id: \.self) { unit in
                             Text(unit == .metric ? "Metric (km)" : "Imperial (mi)")
                                 .tag(unit)
@@ -97,12 +101,14 @@ struct SettingsView: View {
                 } header: {
                     Text("Units")
                 }
-                
+
                 Section {
-                    Picker(selection: Binding(
-                        get: { settings.appearanceMode },
-                        set: { settings.appearanceMode = $0 }
-                    )) {
+                    Picker(
+                        selection: Binding(
+                            get: { settings.appearanceMode },
+                            set: { settings.appearanceMode = $0 }
+                        )
+                    ) {
                         ForEach(AppearanceMode.allCases, id: \.self) { mode in
                             Text(mode.displayName)
                                 .tag(mode)
@@ -120,7 +126,32 @@ struct SettingsView: View {
                 } footer: {
                     Text("Choose how the app looks. System will follow your device settings.")
                 }
-                
+
+                Section {
+                    Picker(
+                        selection: Binding(
+                            get: { settings.selectedGender },
+                            set: { settings.selectedGender = $0 }
+                        )
+                    ) {
+                        ForEach(Gender.allCases, id: \.self) { gender in
+                            Text(gender.displayName)
+                                .tag(gender)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "person.fill")
+                                .foregroundColor(.cyan)
+                                .frame(width: 24)
+                            Text("Gender")
+                        }
+                    }
+                } header: {
+                    Text("Gender")
+                } footer: {
+                    Text("Your avatar will be based on your gender.")
+                }
+
                 Section {
                     HStack {
                         Text("Version")
@@ -128,7 +159,7 @@ struct SettingsView: View {
                         Text("1.0.0")
                             .foregroundColor(.secondary)
                     }
-                    
+
                     Button(action: {
                         settings.resetToDefaults()
                         loadCurrentSettings()
@@ -152,7 +183,7 @@ struct SettingsView: View {
             }
         }
     }
-    
+
     private func loadCurrentSettings() {
         stepGoal = Double(settings.dailyStepsGoal)
         distanceGoal = settings.formatDistanceValue(settings.dailyDistanceGoal)

@@ -109,6 +109,8 @@ struct SessionControlSheet: View {
     
     @Environment(\.colorScheme) private var colorScheme
     @State private var isLocked = false
+    @State private var showMusicSheet = false
+    @State private var musicService = MusicService()
     
     private var formattedTime: String {
         let minutes = Int(elapsedTime) / 60
@@ -128,14 +130,21 @@ struct SessionControlSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-//                ZStack {
-//                    Circle()
-//                        .fill(activityColor.opacity(0.3))
-//                        .frame(width: 50, height: 50)
-//                    Image(systemName: activityIcon)
-//                        .font(.system(size: 22, weight: .semibold))
-//                        .foregroundColor(activityColor)
-//                }
+                Button {
+                    showMusicSheet = true
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(buttonBackground)
+                            .frame(width: 44, height: 44)
+                        
+                        Image(systemName: musicService.isPlaying ? "waveform" : "music.note")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundStyle(musicService.hasNowPlaying ? activityColor : .secondary)
+                            .symbolEffect(.variableColor.iterative, isActive: musicService.isPlaying)
+                    }
+                }
+                .sensoryFeedback(.impact(flexibility: .soft), trigger: showMusicSheet)
                 
                 Spacer()
                 
@@ -146,8 +155,9 @@ struct SessionControlSheet: View {
                 
                 Spacer()
                 
-//                MoveRing(progress: ringProgress)
-//                    .frame(width: 50, height: 50)
+                Circle()
+                    .fill(Color.clear)
+                    .frame(width: 44, height: 44)
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
@@ -219,6 +229,9 @@ struct SessionControlSheet: View {
         .presentationDragIndicator(.visible)
         .presentationBackgroundInteraction(.enabled)
         .interactiveDismissDisabled()
+        .sheet(isPresented: $showMusicSheet) {
+            MusicControlSheet(musicService: musicService)
+        }
     }
 }
 

@@ -16,7 +16,7 @@ enum ActivitySessionState: Equatable {
     case countdown(Int)
     case active
     case paused
-    
+
     var isSessionActive: Bool {
         switch self {
         case .idle:
@@ -38,19 +38,21 @@ class ActivityViewModel {
     var showActivityPicker: Bool = false
     var showSettingsSheet: Bool = false
     var cameraPosition: MapCameraPosition = .automatic
-    
+
     var sessionState: ActivitySessionState = .idle
-    
+
     var countdownEnabled: Bool = false
     var countdownSeconds: Int = 3
     var distanceGoal: Double? = nil
     var timeGoal: Int? = nil
-    
+
     var elapsedTime: TimeInterval = 0
     var currentDistance: Double = 0
     var currentCalories: Double = 0
     var currentHeartRate: Double = 0
     var currentPace: Double = 0
+    var currentCadence: Double = 0
+    var liveRoute: [CLLocation] = []
 
     let activities: [Activity] = Activity.all
 
@@ -61,17 +63,34 @@ class ActivityViewModel {
     var currentActivityColor: Color {
         selectedActivity.color
     }
-    
+
     var currentGoal: ActivityGoal {
         selectedActivity.defaultGoal
     }
-    
+
     var ringProgress: Double {
+        
         let goalMinutes = Double(timeGoal ?? currentGoal.timeMinutes)
+        let goalDistanceKm = distanceGoal ?? currentGoal.distanceKm
+        let goalCaloriesKcal = Double(currentGoal.caloriesKcal)
+
+        
         let elapsedMinutes = elapsedTime / 60.0
-        return min(elapsedMinutes / goalMinutes, 1.0)
+        let timeProgress = min(elapsedMinutes / goalMinutes, 1.0)
+
+        
+        let distanceProgress = goalDistanceKm > 0 ? min(currentDistance / goalDistanceKm, 1.0) : 0
+
+        
+        let caloriesProgress =
+            goalCaloriesKcal > 0 ? min(currentCalories / goalCaloriesKcal, 1.0) : 0
+
+        
+        let overallProgress =
+            (timeProgress * 0.4) + (distanceProgress * 0.4) + (caloriesProgress * 0.2)
+        return min(overallProgress, 1.0)
     }
-    
+
     var hasActiveGoals: Bool {
         distanceGoal != nil || timeGoal != nil || countdownEnabled
     }
@@ -80,7 +99,7 @@ class ActivityViewModel {
         setupLocationBinding()
         setupWorkoutBinding()
     }
-    
+
     func requestAuthorization() async {
         do {
             _ = try await workoutService.requestAuthorization()
@@ -101,7 +120,7 @@ class ActivityViewModel {
             }
             .store(in: &cancellables)
     }
-    
+
     private func setupWorkoutBinding() {
         workoutService.$elapsedTime
             .receive(on: DispatchQueue.main)
@@ -109,35 +128,35 @@ class ActivityViewModel {
                 self?.elapsedTime = value
             }
             .store(in: &cancellables)
-        
+
         workoutService.$distance
             .receive(on: DispatchQueue.main)
             .sink { [weak self] value in
                 self?.currentDistance = value
             }
             .store(in: &cancellables)
-        
+
         workoutService.$calories
             .receive(on: DispatchQueue.main)
             .sink { [weak self] value in
                 self?.currentCalories = value
             }
             .store(in: &cancellables)
-        
+
         workoutService.$heartRate
             .receive(on: DispatchQueue.main)
             .sink { [weak self] value in
                 self?.currentHeartRate = value
             }
             .store(in: &cancellables)
-        
+
         workoutService.$pace
             .receive(on: DispatchQueue.main)
             .sink { [weak self] value in
                 self?.currentPace = value
             }
             .store(in: &cancellables)
-        
+
         workoutService.$isActive
             .receive(on: DispatchQueue.main)
             .sink { [weak self] (isActive: Bool) in
@@ -147,7 +166,7 @@ class ActivityViewModel {
                 }
             }
             .store(in: &cancellables)
-        
+
         workoutService.$isPaused
             .receive(on: DispatchQueue.main)
             .sink { [weak self] (isPaused: Bool) in
@@ -159,6 +178,20 @@ class ActivityViewModel {
                 }
             }
             .store(in: &cancellables)
+
+        workoutService.$liveRoute
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                self?.liveRoute = value
+            }
+            .store(in: &cancellables)
+
+        workoutService.$cadence
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                self?.currentCadence = value
+            }
+            .store(in: &cancellables)
     }
 
     private func updateCameraPosition(to location: CLLocation) {
@@ -168,30 +201,30 @@ class ActivityViewModel {
                 distance: 800
             ))
     }
-    
+
     func startSession() {
         workoutService.prepare(
             activityType: selectedActivity.workoutType,
             isIndoor: selectedActivity.isIndoor
         )
-        
+
         let startValue = countdownEnabled ? countdownSeconds : 3
         sessionState = .countdown(startValue)
         startCountdown(from: startValue)
     }
-    
+
     func pauseSession() {
         workoutService.pause()
     }
-    
+
     func resumeSession() {
         workoutService.resume()
     }
-    
+
     func endSession() {
         countdownTimer?.invalidate()
         countdownTimer = nil
-        
+
         Task {
             _ = await workoutService.stop()
             await MainActor.run {
@@ -199,10 +232,11 @@ class ActivityViewModel {
             }
         }
     }
-    
+
     private func startCountdown(from value: Int) {
         var remaining = value
-        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) {
+            [weak self] timer in
             remaining -= 1
             if remaining > 0 {
                 self?.sessionState = .countdown(remaining)

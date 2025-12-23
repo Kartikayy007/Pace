@@ -271,6 +271,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Pace/Info.plist;
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "Please allow music to connect";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "To display your activity data and workout metrics";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "To save your workouts and contribute to your Move ring";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "To show your location on the map";
@@ -309,6 +310,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Pace/Info.plist;
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "Please allow music to connect";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "To display your activity data and workout metrics";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "To save your workouts and contribute to your Move ring";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "To show your location on the map";

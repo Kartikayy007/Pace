@@ -11,9 +11,9 @@ import SwiftUI
 struct PaceColoredMap: View {
     let segments: [RouteSegment]
     let activityColor: Color
-    
+
     @State private var cameraPosition: MapCameraPosition = .automatic
-    
+
     private func colorForPacePercentile(_ percentile: Double) -> Color {
         if percentile < 0.5 {
             let ratio = percentile * 2.0
@@ -31,14 +31,14 @@ struct PaceColoredMap: View {
             )
         }
     }
-    
+
     var body: some View {
         Map(position: $cameraPosition) {
-            ForEach(segments) { segment in
+            ForEach(segments.filter { $0.coordinates.count >= 2 }) { segment in
                 MapPolyline(coordinates: segment.coordinates)
                     .stroke(
                         colorForPacePercentile(segment.pacePercentile),
-                        lineWidth: 5
+                        style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round)
                     )
             }
         }
@@ -47,18 +47,19 @@ struct PaceColoredMap: View {
             setupCamera()
         }
     }
-    
+
     private func setupCamera() {
         guard let firstSegment = segments.first,
-              let firstCoord = firstSegment.coordinates.first else {
+            let firstCoord = firstSegment.coordinates.first
+        else {
             return
         }
-        
+
         var minLat = firstCoord.latitude
         var maxLat = firstCoord.latitude
         var minLon = firstCoord.longitude
         var maxLon = firstCoord.longitude
-        
+
         for segment in segments {
             for coord in segment.coordinates {
                 minLat = min(minLat, coord.latitude)
@@ -67,17 +68,17 @@ struct PaceColoredMap: View {
                 maxLon = max(maxLon, coord.longitude)
             }
         }
-        
+
         let center = CLLocationCoordinate2D(
             latitude: (minLat + maxLat) / 2.0,
             longitude: (minLon + maxLon) / 2.0
         )
-        
+
         let span = MKCoordinateSpan(
             latitudeDelta: (maxLat - minLat) * 1.3,
             longitudeDelta: (maxLon - minLon) * 1.3
         )
-        
+
         cameraPosition = .region(MKCoordinateRegion(center: center, span: span))
     }
 }
@@ -88,7 +89,7 @@ struct PaceLegend: View {
             Text("Fast")
                 .font(.caption2)
                 .foregroundColor(.secondary)
-            
+
             LinearGradient(
                 colors: [.green, .yellow, .red],
                 startPoint: .leading,
@@ -96,7 +97,7 @@ struct PaceLegend: View {
             )
             .frame(width: 60, height: 8)
             .clipShape(Capsule())
-            
+
             Text("Slow")
                 .font(.caption2)
                 .foregroundColor(.secondary)

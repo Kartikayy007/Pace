@@ -11,35 +11,35 @@ import SwiftUI
 enum UnitSystem: String, CaseIterable, Codable {
     case metric = "metric"
     case imperial = "imperial"
-    
+
     var distanceUnit: String {
         switch self {
         case .metric: return "km"
         case .imperial: return "mi"
         }
     }
-    
+
     var distanceUnitFull: String {
         switch self {
         case .metric: return "kilometers"
         case .imperial: return "miles"
         }
     }
-    
+
     func formatDistance(_ meters: Double) -> Double {
         switch self {
         case .metric: return meters / 1000.0
         case .imperial: return meters / 1609.34
         }
     }
-    
+
     func toMeters(_ value: Double) -> Double {
         switch self {
         case .metric: return value * 1000.0
         case .imperial: return value * 1609.34
         }
     }
-    
+
     func formatDistanceString(_ meters: Double) -> String {
         let value = formatDistance(meters)
         return String(format: "%.1f %@", value, distanceUnit)
@@ -50,7 +50,7 @@ enum AppearanceMode: String, CaseIterable, Codable {
     case system = "system"
     case light = "light"
     case dark = "dark"
-    
+
     var displayName: String {
         switch self {
         case .system: return "System"
@@ -58,7 +58,7 @@ enum AppearanceMode: String, CaseIterable, Codable {
         case .dark: return "Dark"
         }
     }
-    
+
     var colorScheme: ColorScheme? {
         switch self {
         case .system: return nil
@@ -68,11 +68,30 @@ enum AppearanceMode: String, CaseIterable, Codable {
     }
 }
 
+enum Gender: String, CaseIterable, Codable {
+    case male = "male"
+    case female = "female"
+
+    var displayName: String {
+        switch self {
+        case .male: return "Male"
+        case .female: return "Female"
+        }
+    }
+
+    var animationFileName: String {
+        switch self {
+        case .male: return "Walking3.dae"
+        case .female: return "Walking1.dae"
+        }
+    }
+}
+
 struct Goals: Codable, Equatable {
     var dailySteps: Int
     var dailyDistance: Double
     var dailyCalories: Double
-    
+
     static let `default` = Goals(
         dailySteps: 10000,
         dailyDistance: 5000,
@@ -84,10 +103,12 @@ struct AppSettings: Codable, Equatable {
     var unitSystem: UnitSystem
     var appearanceMode: AppearanceMode
     var goals: Goals
-    
+    var selectedGender: Gender
+
     static let `default` = AppSettings(
         unitSystem: .metric,
         appearanceMode: .system,
-        goals: .default
+        goals: .default,
+        selectedGender: .male
     )
 }
