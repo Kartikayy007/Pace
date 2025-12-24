@@ -100,8 +100,8 @@ class WorkoutService: NSObject, ObservableObject {
         locationManager = CLLocationManager()
         locationManager?.delegate = self
         locationManager?.desiredAccuracy = kCLLocationAccuracyBestForNavigation
-        locationManager?.distanceFilter = 5  
-        locationManager?.activityType = .fitness  
+        locationManager?.distanceFilter = 5
+        locationManager?.activityType = .fitness
         locationManager?.allowsBackgroundLocationUpdates = true
         locationManager?.pausesLocationUpdatesAutomatically = false
         locationManager?.requestWhenInUseAuthorization()
@@ -146,7 +146,7 @@ class WorkoutService: NSObject, ObservableObject {
         pedometer.startUpdates(from: Date()) { [weak self] data, error in
             guard let data = data else { return }
             DispatchQueue.main.async {
-                
+
                 self?.cadence = (data.currentCadence?.doubleValue ?? 0) * 60
             }
         }
@@ -219,8 +219,6 @@ class WorkoutService: NSObject, ObservableObject {
         session.end()
         print("[WorkoutService] Session ended")
 
-        
-        
         let minDistanceMeters = 10.0
         let minTimeSeconds = 30.0
 
@@ -477,6 +475,67 @@ class WorkoutService: NSObject, ObservableObject {
             healthStore.execute(query)
         }
     }
+
+    func fetchCadenceData(for workout: HKWorkout) async -> [CadenceSample] {
+        print("[WorkoutService] Fetching cadence data...")
+
+        guard let stepCountType = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
+            return []
+        }
+
+        let predicate = HKQuery.predicateForSamples(
+            withStart: workout.startDate,
+            end: workout.endDate,
+            options: .strictStartDate
+        )
+
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
+
+        return await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: stepCountType,
+                predicate: predicate,
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: [sortDescriptor]
+            ) { _, samples, error in
+                if let error = error {
+                    print("[WorkoutService] ERROR: Failed to fetch step count: \(error)")
+                    continuation.resume(returning: [])
+                    return
+                }
+
+                guard let stepSamples = samples as? [HKQuantitySample], !stepSamples.isEmpty else {
+                    print("[WorkoutService] No step count samples found")
+                    continuation.resume(returning: [])
+                    return
+                }
+
+                var cadenceSamples: [CadenceSample] = []
+
+                for sample in stepSamples {
+                    let steps = sample.quantity.doubleValue(for: .count())
+                    let duration = sample.endDate.timeIntervalSince(sample.startDate)
+
+                    if duration > 0 {
+                        let stepsPerMinute = (steps / duration) * 60.0
+
+                        if stepsPerMinute > 0 && stepsPerMinute < 300 {
+                            cadenceSamples.append(
+                                CadenceSample(
+                                    date: sample.startDate,
+                                    stepsPerMinute: stepsPerMinute
+                                ))
+                        }
+                    }
+                }
+
+                print("[WorkoutService] Calculated \(cadenceSamples.count) cadence samples")
+                continuation.resume(returning: cadenceSamples)
+            }
+
+            healthStore.execute(query)
+        }
+    }
 }
 
 extension WorkoutService: HKWorkoutSessionDelegate {
@@ -521,7 +580,7 @@ extension WorkoutService: HKLiveWorkoutBuilderDelegate {
 
 extension WorkoutService: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        
+
         let filteredLocations = locations.filter {
             $0.horizontalAccuracy > 0 && $0.horizontalAccuracy < 20
         }
@@ -530,12 +589,10 @@ extension WorkoutService: CLLocationManagerDelegate {
 
         routeLocations.append(contentsOf: filteredLocations)
 
-        
         DispatchQueue.main.async {
             self.liveRoute = self.routeLocations
         }
 
-        
         routeBuilder?.insertRouteData(filteredLocations) { success, error in
             if let error = error {
                 print("[WorkoutService] ERROR: Failed to insert route data: \(error)")

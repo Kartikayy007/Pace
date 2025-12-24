@@ -136,6 +136,7 @@ struct WorkoutDetailView: View {
 
     @State private var routeLocations: [CLLocation] = []
     @State private var heartRateData: [HeartRateSample] = []
+    @State private var cadenceData: [CadenceSample] = []
     @State private var statistics: WorkoutStatistics = .empty
     @State private var isLoading = true
 
@@ -245,10 +246,9 @@ struct WorkoutDetailView: View {
                 }
                 .padding(.horizontal)
 
-                if !statistics.elevationData.isEmpty {
-                    ElevationPaceChart(
-                        elevationData: statistics.elevationData,
-                        paceData: statistics.paceData,
+                if !cadenceData.isEmpty {
+                    CadenceChart(
+                        cadenceData: cadenceData,
                         activityColor: activityColor
                     )
                     .padding(.horizontal)
@@ -285,9 +285,11 @@ struct WorkoutDetailView: View {
 
         async let routeTask = workoutService.fetchRoute(for: workout)
         async let hrTask = workoutService.fetchHeartRateData(for: workout)
+        async let cadenceTask = workoutService.fetchCadenceData(for: workout)
 
         routeLocations = await routeTask
         heartRateData = await hrTask
+        cadenceData = await cadenceTask
 
         statistics = WorkoutStatsCalculator.calculate(
             routeLocations: routeLocations,
@@ -298,7 +300,7 @@ struct WorkoutDetailView: View {
 
         isLoading = false
         print(
-            "[WorkoutDetailView] Loaded \(routeLocations.count) route points, \(heartRateData.count) HR samples, \(statistics.splits.count) splits"
+            "[WorkoutDetailView] Loaded \(routeLocations.count) route points, \(heartRateData.count) HR samples, \(cadenceData.count) cadence samples"
         )
     }
 }

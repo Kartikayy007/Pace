@@ -8,13 +8,10 @@
 import CoreLocation
 import Foundation
 
-
-
 struct RouteSmoothing {
     static func douglasPeucker(locations: [CLLocation], epsilon: Double) -> [CLLocation] {
         guard locations.count > 2 else { return locations }
 
-        
         var maxDistance: Double = 0
         var maxIndex = 0
 
@@ -30,22 +27,19 @@ struct RouteSmoothing {
             }
         }
 
-        
         if maxDistance > epsilon {
             let leftPart = douglasPeucker(
                 locations: Array(locations[0...maxIndex]), epsilon: epsilon)
             let rightPart = douglasPeucker(
                 locations: Array(locations[maxIndex...]), epsilon: epsilon)
 
-            
             return Array(leftPart.dropLast()) + rightPart
         } else {
-            
+
             return [start, end]
         }
     }
 
-    
     private static func perpendicularDistance(
         point: CLLocation, lineStart: CLLocation, lineEnd: CLLocation
     ) -> Double {
@@ -61,11 +55,9 @@ struct RouteSmoothing {
 
         guard denominator > 0 else { return 0 }
 
-        
         return (numerator / denominator) * 111000
     }
 
-    
     static func movingAverage(locations: [CLLocation], windowSize: Int = 3) -> [CLLocation] {
         guard locations.count > windowSize else { return locations }
 
@@ -102,12 +94,6 @@ struct RouteSmoothing {
         return smoothed
     }
 
-    
-    
-    
-    
-    
-    
     static func catmullRomSpline(
         locations: [CLLocation], pointsPerSegment: Int = 5, alpha: Double = 0.5
     ) -> [CLLocation] {
@@ -115,21 +101,17 @@ struct RouteSmoothing {
 
         var result: [CLLocation] = []
 
-        
-        
         for i in 0..<(locations.count - 1) {
-            
+
             let p0 = locations[max(0, i - 1)]
             let p1 = locations[i]
             let p2 = locations[min(locations.count - 1, i + 1)]
             let p3 = locations[min(locations.count - 1, i + 2)]
 
-            
             if i == 0 {
                 result.append(p1)
             }
 
-            
             for j in 1...pointsPerSegment {
                 let t = Double(j) / Double(pointsPerSegment)
 
@@ -142,12 +124,10 @@ struct RouteSmoothing {
                     alpha: alpha
                 )
 
-                
                 let altitude = p1.altitude + (p2.altitude - p1.altitude) * t
                 let timeInterval = p2.timestamp.timeIntervalSince(p1.timestamp) * t
                 let timestamp = p1.timestamp.addingTimeInterval(timeInterval)
 
-                
                 let accuracy = (p1.horizontalAccuracy + p2.horizontalAccuracy) / 2
                 let vAccuracy = (p1.verticalAccuracy + p2.verticalAccuracy) / 2
 
@@ -166,7 +146,6 @@ struct RouteSmoothing {
         return result
     }
 
-    
     private static func catmullRomPoint(
         p0: CLLocationCoordinate2D,
         p1: CLLocationCoordinate2D,
@@ -176,7 +155,6 @@ struct RouteSmoothing {
         alpha: Double
     ) -> CLLocationCoordinate2D {
 
-        
         func getT(
             _ t: Double, _ p0: CLLocationCoordinate2D, _ p1: CLLocationCoordinate2D, _ alpha: Double
         ) -> Double {
@@ -191,19 +169,16 @@ struct RouteSmoothing {
         let t2 = getT(t1, p1, p2, alpha)
         let t3 = getT(t2, p2, p3, alpha)
 
-        
         let tActual = t1 + t * (t2 - t1)
 
-        
         guard t1 != t0, t2 != t1, t3 != t2, t2 != t0, t3 != t1 else {
-            
+
             return CLLocationCoordinate2D(
                 latitude: p1.latitude + (p2.latitude - p1.latitude) * t,
                 longitude: p1.longitude + (p2.longitude - p1.longitude) * t
             )
         }
 
-        
         func lerp(
             _ a: CLLocationCoordinate2D, _ b: CLLocationCoordinate2D, _ ta: Double, _ tb: Double,
             _ t: Double
@@ -232,6 +207,12 @@ struct HeartRateSample: Identifiable {
     let id = UUID()
     let date: Date
     let bpm: Double
+}
+
+struct CadenceSample: Identifiable {
+    let id = UUID()
+    let date: Date
+    let stepsPerMinute: Double
 }
 
 struct KilometerSplit: Identifiable {
@@ -296,6 +277,7 @@ struct WorkoutStatistics {
     let elevationData: [ElevationDataPoint]
     let paceData: [PaceDataPoint]
     let heartRateData: [HeartRateSample]
+    let cadenceData: [CadenceSample]
     let routeSegments: [RouteSegment]
 
     static let empty = WorkoutStatistics(
@@ -310,6 +292,7 @@ struct WorkoutStatistics {
         elevationData: [],
         paceData: [],
         heartRateData: [],
+        cadenceData: [],
         routeSegments: []
     )
 }
@@ -323,7 +306,6 @@ struct WorkoutStatsCalculator {
         totalDistance: Double
     ) -> WorkoutStatistics {
 
-        
         guard routeLocations.count >= 2 else {
             let hrValues = heartRateSamples.map { $0.bpm }
             let avgHR = hrValues.isEmpty ? nil : hrValues.reduce(0, +) / Double(hrValues.count)
@@ -341,6 +323,7 @@ struct WorkoutStatsCalculator {
                 elevationData: [],
                 paceData: [],
                 heartRateData: heartRateSamples,
+                cadenceData: [],
                 routeSegments: []
             )
         }
@@ -409,6 +392,7 @@ struct WorkoutStatsCalculator {
             elevationData: elevationData,
             paceData: paceData,
             heartRateData: heartRateSamples,
+            cadenceData: [],
             routeSegments: routeSegments
         )
     }
