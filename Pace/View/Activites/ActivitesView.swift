@@ -12,10 +12,15 @@ import UIKit
 struct ActivitesView: View {
     @State private var viewModel = ActivityViewModel()
 
+    @AppStorage("activityDistanceGoal") private var savedDistanceGoal: Double = 5.0
+    @AppStorage("activityTimeGoal") private var savedTimeGoal: Int = 30
+    @AppStorage("activityCountdownEnabled") private var savedCountdownEnabled: Bool = true
+    @AppStorage("activityCountdownSeconds") private var savedCountdownSeconds: Int = 3
+
     private var isSessionActive: Bool {
         viewModel.sessionState.isSessionActive
     }
-    
+
     var body: some View {
         idleView
             .task {
@@ -23,35 +28,41 @@ struct ActivitesView: View {
             }
             .onAppear {
                 viewModel.requestLocationPermission()
+                viewModel.distanceGoal = savedDistanceGoal
+                viewModel.timeGoal = savedTimeGoal
+                viewModel.countdownEnabled = savedCountdownEnabled
+                viewModel.countdownSeconds = savedCountdownSeconds
             }
-            .fullScreenCover(isPresented: .init(
-                get: { isSessionActive },
-                set: { if !$0 { viewModel.endSession() } }
-            )) {
+            .fullScreenCover(
+                isPresented: .init(
+                    get: { isSessionActive },
+                    set: { if !$0 { viewModel.endSession() } }
+                )
+            ) {
                 sessionView
             }
             .sheet(isPresented: $viewModel.showActivityPicker) {
-            ActivityPickerSheet(
-                activities: viewModel.activities,
-                selectedActivity: $viewModel.selectedActivity,
-                isPresented: $viewModel.showActivityPicker
-            )
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
-        }
-        .sheet(isPresented: $viewModel.showSettingsSheet) {
-            ActivitySettingsSheet(
-                countdownEnabled: $viewModel.countdownEnabled,
-                countdownSeconds: $viewModel.countdownSeconds,
-                distanceGoal: $viewModel.distanceGoal,
-                timeGoal: $viewModel.timeGoal,
-                isPresented: $viewModel.showSettingsSheet
-            )
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
-        }
+                ActivityPickerSheet(
+                    activities: viewModel.activities,
+                    selectedActivity: $viewModel.selectedActivity,
+                    isPresented: $viewModel.showActivityPicker
+                )
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $viewModel.showSettingsSheet) {
+                ActivitySettingsSheet(
+                    countdownEnabled: $viewModel.countdownEnabled,
+                    countdownSeconds: $viewModel.countdownSeconds,
+                    distanceGoal: $viewModel.distanceGoal,
+                    timeGoal: $viewModel.timeGoal,
+                    isPresented: $viewModel.showSettingsSheet
+                )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
     }
-    
+
     private var idleView: some View {
         ZStack {
             ActivityMapBackground(cameraPosition: $viewModel.cameraPosition)
@@ -67,34 +78,28 @@ struct ActivitesView: View {
                 }
                 .padding(.horizontal, 28)
                 .padding(.top, 60)
-                
-                if viewModel.hasActiveGoals {
-                    HStack(spacing: 16) {
-                        if let distance = viewModel.distanceGoal {
-                            GoalBadge(
-                                icon: "point.topleft.down.to.point.bottomright.curvepath.fill",
-                                value: String(format: "%.1f km", distance),
-                                color: .blue
-                            )
-                        }
-                        if let time = viewModel.timeGoal {
-                            GoalBadge(
-                                icon: "clock.fill",
-                                value: "\(time) min",
-                                color: .purple
-                            )
-                        }
-                        if viewModel.countdownEnabled {
-                            GoalBadge(
-                                icon: "timer",
-                                value: "\(viewModel.countdownSeconds)s",
-                                color: .orange
-                            )
-                        }
+
+                HStack(spacing: 16) {
+                    GoalBadge(
+                        icon: "point.topleft.down.to.point.bottomright.curvepath.fill",
+                        value: String(format: "%.1f km", savedDistanceGoal),
+                        color: .blue
+                    )
+                    GoalBadge(
+                        icon: "clock.fill",
+                        value: "\(savedTimeGoal) min",
+                        color: .purple
+                    )
+                    if savedCountdownEnabled {
+                        GoalBadge(
+                            icon: "timer",
+                            value: "\(savedCountdownSeconds)s",
+                            color: .orange
+                        )
                     }
-                    .padding(.horizontal, 28)
-                    .padding(.top, 16)
                 }
+                .padding(.horizontal, 28)
+                .padding(.top, 16)
 
                 Spacer()
 
@@ -131,7 +136,7 @@ struct ActivitesView: View {
                                     )
                             )
                     }
-                    
+
                     Button(action: {
                         let generator = UIImpactFeedbackGenerator(style: .light)
                         generator.impactOccurred()
@@ -143,13 +148,13 @@ struct ActivitesView: View {
                             .frame(width: 72, height: 72)
                             .clipShape(Circle())
                     }.glassEffect(.regular.interactive())
-                    
+
                 }
                 .padding(.bottom, 80)
             }
         }
     }
-    
+
     @ViewBuilder
     private var sessionView: some View {
         switch viewModel.sessionState {
@@ -174,7 +179,7 @@ struct GoalBadge: View {
     let icon: String
     let value: String
     let color: Color
-    
+
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: icon)
