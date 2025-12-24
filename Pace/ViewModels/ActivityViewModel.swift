@@ -31,8 +31,15 @@ enum ActivitySessionState: Equatable {
 class ActivityViewModel {
     private let locationService = LocationService()
     private let workoutService = WorkoutService()
+    private let announcementService = AnnouncementService.shared
     private var cancellables = Set<AnyCancellable>()
     private var countdownTimer: Timer?
+
+    var isAnnouncementsMuted: Bool = false {
+        didSet {
+            announcementService.isMuted = isAnnouncementsMuted
+        }
+    }
 
     var selectedActivity: Activity = .walk
     var showActivityPicker: Bool = false
@@ -69,23 +76,19 @@ class ActivityViewModel {
     }
 
     var ringProgress: Double {
-        
+
         let goalMinutes = Double(timeGoal ?? currentGoal.timeMinutes)
         let goalDistanceKm = distanceGoal ?? currentGoal.distanceKm
         let goalCaloriesKcal = Double(currentGoal.caloriesKcal)
 
-        
         let elapsedMinutes = elapsedTime / 60.0
         let timeProgress = min(elapsedMinutes / goalMinutes, 1.0)
 
-        
         let distanceProgress = goalDistanceKm > 0 ? min(currentDistance / goalDistanceKm, 1.0) : 0
 
-        
         let caloriesProgress =
             goalCaloriesKcal > 0 ? min(currentCalories / goalCaloriesKcal, 1.0) : 0
 
-        
         let overallProgress =
             (timeProgress * 0.4) + (distanceProgress * 0.4) + (caloriesProgress * 0.2)
         return min(overallProgress, 1.0)
@@ -125,14 +128,35 @@ class ActivityViewModel {
         workoutService.$elapsedTime
             .receive(on: DispatchQueue.main)
             .sink { [weak self] value in
-                self?.elapsedTime = value
+                guard let self = self else { return }
+                self.elapsedTime = value
+
+                // Check time goal
+                if let goalMinutes = self.timeGoal {
+                    self.announcementService.checkTimeGoal(
+                        elapsedMinutes: value / 60.0,
+                        goalMinutes: goalMinutes
+                    )
+                }
             }
             .store(in: &cancellables)
 
         workoutService.$distance
             .receive(on: DispatchQueue.main)
             .sink { [weak self] value in
-                self?.currentDistance = value
+                guard let self = self else { return }
+                self.currentDistance = value
+
+                // Check km milestone announcements
+                self.announcementService.checkKilometerMilestone(
+                    distanceKm: value,
+                    paceSecondsPerKm: self.currentPace
+                )
+
+                // Check distance goal
+                if let goalKm = self.distanceGoal {
+                    self.announcementService.checkDistanceGoal(currentKm: value, goalKm: goalKm)
+                }
             }
             .store(in: &cancellables)
 
@@ -243,6 +267,8 @@ class ActivityViewModel {
             } else {
                 timer.invalidate()
                 self?.countdownTimer = nil
+                self?.announcementService.reset()
+                self?.announcementService.announceWorkoutStart()
                 self?.workoutService.start()
                 self?.sessionState = .active
             }

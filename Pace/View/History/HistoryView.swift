@@ -137,6 +137,7 @@ struct WorkoutDetailView: View {
     @State private var routeLocations: [CLLocation] = []
     @State private var heartRateData: [HeartRateSample] = []
     @State private var cadenceData: [CadenceSample] = []
+    @State private var paceData: [PaceSample] = []
     @State private var statistics: WorkoutStatistics = .empty
     @State private var isLoading = true
 
@@ -229,44 +230,55 @@ struct WorkoutDetailView: View {
                 }
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    StatCard(title: "Duration", value: formattedDuration, icon: "clock.fill")
+                    StatCard(
+                        title: "Duration", value: formattedDuration, icon: "clock.fill",
+                        iconColor: .red)
                     StatCard(
                         title: "Distance", value: "\(formattedDistance) km",
-                        icon: "point.topleft.down.to.point.bottomright.curvepath.fill")
-                    StatCard(title: "Avg Pace", value: formattedPace, icon: "speedometer")
+                        icon: "point.topleft.down.to.point.bottomright.curvepath.fill",
+                        iconColor: .blue)
                     StatCard(
-                        title: "Calories", value: "\(formattedCalories) kcal", icon: "flame.fill")
+                        title: "Avg Pace", value: formattedPace, icon: "speedometer",
+                        iconColor: .green)
+                    StatCard(
+                        title: "Calories", value: "\(formattedCalories) kcal", icon: "flame.fill",
+                        iconColor: .orange)
                 }
                 .padding(.horizontal)
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     StatCard(
-                        title: "Elevation", value: formattedElevationGain, icon: "arrow.up.right")
-                    StatCard(title: "Avg HR", value: formattedAvgHR, icon: "heart.fill")
+                        title: "Elevation", value: formattedElevationGain, icon: "arrow.up.right",
+                        iconColor: .purple)
+                    StatCard(
+                        title: "Avg HR", value: formattedAvgHR, icon: "heart.fill", iconColor: .pink
+                    )
                 }
                 .padding(.horizontal)
 
-                if !cadenceData.isEmpty {
-                    CadenceChart(
-                        cadenceData: cadenceData,
-                        activityColor: activityColor
-                    )
-                    .padding(.horizontal)
-                }
+                PaceChart(
+                    paceData: paceData,
+                    activityColor: activityColor,
+                    averagePace: statistics.averagePace,
+                    workoutDuration: workout.duration
+                )
+                .padding(.horizontal)
 
-                if !heartRateData.isEmpty {
-                    HeartRateChart(
-                        heartRateData: heartRateData,
-                        averageHR: statistics.averageHeartRate,
-                        maxHR: statistics.maxHeartRate
-                    )
-                    .padding(.horizontal)
-                }
+                //                CadenceChart(
+                //                    cadenceData: cadenceData,
+                //                    activityColor: activityColor
+                //                )
+                //                .padding(.horizontal)
+                //
+                //                HeartRateChart(
+                //                    heartRateData: heartRateData,
+                //                    averageHR: statistics.averageHeartRate,
+                //                    maxHR: statistics.maxHeartRate
+                //                )
+                //                .padding(.horizontal)
 
-                if !statistics.splits.isEmpty {
-                    SplitsView(splits: statistics.splits)
-                        .padding(.horizontal)
-                }
+                SplitsView(splits: statistics.splits)
+                    .padding(.horizontal)
 
                 Spacer(minLength: 40)
             }
@@ -291,6 +303,9 @@ struct WorkoutDetailView: View {
         heartRateData = await hrTask
         cadenceData = await cadenceTask
 
+        // Calculate pace data from route locations
+        paceData = calculatePaceData(from: routeLocations)
+
         statistics = WorkoutStatsCalculator.calculate(
             routeLocations: routeLocations,
             heartRateSamples: heartRateData,
@@ -300,8 +315,38 @@ struct WorkoutDetailView: View {
 
         isLoading = false
         print(
-            "[WorkoutDetailView] Loaded \(routeLocations.count) route points, \(heartRateData.count) HR samples, \(cadenceData.count) cadence samples"
+            "[WorkoutDetailView] Loaded \(routeLocations.count) route points, \(heartRateData.count) HR samples, \(cadenceData.count) cadence samples, \(paceData.count) pace samples"
         )
+    }
+
+    private func calculatePaceData(from locations: [CLLocation]) -> [PaceSample] {
+        guard locations.count >= 2 else { return [] }
+
+        var samples: [PaceSample] = []
+        let segmentSize = max(1, locations.count / 50)  // Aim for ~50 bars
+
+        var i = 0
+        while i < locations.count - 1 {
+            let endIndex = min(i + segmentSize, locations.count - 1)
+            let startLoc = locations[i]
+            let endLoc = locations[endIndex]
+
+            let distance = endLoc.distance(from: startLoc)
+            let time = endLoc.timestamp.timeIntervalSince(startLoc.timestamp)
+
+            if time > 0 && distance > 0 {
+                let paceSecondsPerKm = (time / distance) * 1000
+                // Filter out unreasonable pace values (slower than 30 min/km or faster than 2 min/km)
+                if paceSecondsPerKm > 120 && paceSecondsPerKm < 1800 {
+                    samples.append(
+                        PaceSample(date: startLoc.timestamp, paceSecondsPerKm: paceSecondsPerKm))
+                }
+            }
+
+            i = endIndex
+        }
+
+        return samples
     }
 }
 
@@ -334,24 +379,34 @@ struct StatCard: View {
     let title: String
     let value: String
     let icon: String
+    var iconColor: Color = .red
 
     var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(.accentColor)
+        VStack(spacing: 12) {
+            
+            HStack {
+            ZStack {
+//                Circle()
+//                    .fill(iconColor)
+//                    .frame(width: 14, height: 14)
+                Image(systemName: icon)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(iconColor)
+            }
+
             Text(value)
-                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .font(.system(size: 24, weight: .bold, design: .rounded))
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.7)
+            }
             Text(title)
-                .font(.system(size: 12))
+                .font(.system(size: 13))
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .padding(.vertical, 20)
         .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 
@@ -367,5 +422,5 @@ extension HKWorkoutActivityType {
 }
 
 #Preview {
-    HistoryView()
+    StatCard(title: "Duration", value: "1:23:45", icon: "clock.fill")
 }

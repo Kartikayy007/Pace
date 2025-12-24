@@ -258,6 +258,12 @@ struct PaceDataPoint: Identifiable {
     let pace: Double
 }
 
+struct PaceSample: Identifiable {
+    let id = UUID()
+    let date: Date
+    let paceSecondsPerKm: Double
+}
+
 struct RouteSegment: Identifiable {
     let id = UUID()
     let coordinates: [CLLocationCoordinate2D]

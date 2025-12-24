@@ -219,12 +219,16 @@ class WorkoutService: NSObject, ObservableObject {
         session.end()
         print("[WorkoutService] Session ended")
 
-        let minDistanceMeters = 10.0
-        let minTimeSeconds = 30.0
+        let minDistanceMeters = 50.0
+        let distanceInMeters = distance * 1000
 
-        if distance * 1000 < minDistanceMeters || elapsedTime < minTimeSeconds {
+        print(
+            "[WorkoutService] Checking save threshold - distance: \(distanceInMeters)m, time: \(elapsedTime)s"
+        )
+
+        if distanceInMeters < minDistanceMeters {
             print(
-                "[WorkoutService] Skipping save - workout too short (distance: \(distance * 1000)m, time: \(elapsedTime)s)"
+                "[WorkoutService] Skipping save - not enough distance moved (\(distanceInMeters)m < \(minDistanceMeters)m)"
             )
             DispatchQueue.main.async {
                 self.isActive = false

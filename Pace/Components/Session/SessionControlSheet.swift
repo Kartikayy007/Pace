@@ -16,11 +16,11 @@ struct HoldToConfirmButton: View {
     let foreground: Color
     let progressColor: Color
     let onComplete: () -> Void
-    
+
     @State private var isHolding = false
     @State private var holdProgress: CGFloat = 0
     @State private var holdTimer: Timer?
-    
+
     var body: some View {
         ZStack {
             if isHolding || holdProgress > 0 {
@@ -31,11 +31,11 @@ struct HoldToConfirmButton: View {
                     .rotationEffect(.degrees(-90))
                     .animation(.linear(duration: 0.05), value: holdProgress)
             }
-            
+
             Circle()
                 .fill(background)
                 .frame(width: size, height: size)
-            
+
             Image(systemName: icon)
                 .font(.system(size: size * 0.35, weight: .bold))
                 .foregroundColor(foreground)
@@ -54,44 +54,44 @@ struct HoldToConfirmButton: View {
                 }
         )
     }
-    
+
     private func startHold() {
         isHolding = true
         holdProgress = 0
-        
+
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.prepare()
-        
+
         let updateInterval: Double = 0.02
         let progressIncrement = CGFloat(updateInterval / holdDuration)
-        
+
         holdTimer = Timer.scheduledTimer(withTimeInterval: updateInterval, repeats: true) { timer in
             holdProgress += progressIncrement
-            
+
             if Int(holdProgress * 100) % 25 == 0 {
                 let tickGenerator = UIImpactFeedbackGenerator(style: .light)
                 tickGenerator.impactOccurred(intensity: 0.5)
             }
-            
+
             if holdProgress >= 1.0 {
                 timer.invalidate()
                 holdTimer = nil
-                
+
                 let successGenerator = UINotificationFeedbackGenerator()
                 successGenerator.notificationOccurred(.success)
-                
+
                 isHolding = false
                 holdProgress = 0
                 onComplete()
             }
         }
     }
-    
+
     private func cancelHold() {
         holdTimer?.invalidate()
         holdTimer = nil
         isHolding = false
-        
+
         withAnimation(.easeOut(duration: 0.2)) {
             holdProgress = 0
         }
@@ -104,29 +104,30 @@ struct SessionControlSheet: View {
     let elapsedTime: TimeInterval
     let ringProgress: Double
     let isPaused: Bool
+    @Binding var isMuted: Bool
     let onPause: () -> Void
     let onEnd: () -> Void
-    
+
     @Environment(\.colorScheme) private var colorScheme
     @State private var isLocked = false
     @State private var showMusicSheet = false
     @State private var musicService = MusicService()
-    
+
     private var formattedTime: String {
         let minutes = Int(elapsedTime) / 60
         let seconds = Int(elapsedTime) % 60
         let centiseconds = Int((elapsedTime.truncatingRemainder(dividingBy: 1)) * 100)
         return String(format: "%02d:%02d.%02d", minutes, seconds, centiseconds)
     }
-    
+
     private var buttonBackground: Color {
         colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.15)
     }
-    
+
     private var buttonForeground: Color {
         colorScheme == .dark ? .white : .primary
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -137,39 +138,53 @@ struct SessionControlSheet: View {
                         Circle()
                             .fill(buttonBackground)
                             .frame(width: 44, height: 44)
-                        
+
                         Image(systemName: musicService.isPlaying ? "waveform" : "music.note")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundStyle(musicService.hasNowPlaying ? activityColor : .secondary)
-                            .symbolEffect(.variableColor.iterative, isActive: musicService.isPlaying)
+                            .foregroundStyle(
+                                musicService.hasNowPlaying ? activityColor : .secondary
+                            )
+                            .symbolEffect(
+                                .variableColor.iterative, isActive: musicService.isPlaying)
                     }
                 }
                 .sensoryFeedback(.impact(flexibility: .soft), trigger: showMusicSheet)
-                
+
                 Spacer()
-                
+
                 Text(formattedTime)
                     .font(.system(size: 36, weight: .bold, design: .rounded))
                     .foregroundColor(.yellow)
                     .monospacedDigit()
-                
+
                 Spacer()
-                
-                Circle()
-                    .fill(Color.clear)
-                    .frame(width: 44, height: 44)
+
+                Button {
+                    isMuted.toggle()
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(buttonBackground)
+                            .frame(width: 44, height: 44)
+
+                        Image(systemName: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundStyle(isMuted ? .secondary : activityColor)
+                    }
+                }
+                .sensoryFeedback(.impact(flexibility: .soft), trigger: isMuted)
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
-            
+
             Spacer()
-            
+
             if isLocked {
                 VStack(spacing: 12) {
                     HoldToConfirmButton(
                         icon: "lock.open.fill",
                         size: 90,
-                        holdDuration: 1.5,
+                        holdDuration: 1,
                         background: buttonBackground,
                         foreground: buttonForeground,
                         progressColor: activityColor
@@ -178,7 +193,7 @@ struct SessionControlSheet: View {
                             isLocked = false
                         }
                     }
-                    
+
                     Text("Hold to unlock")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
@@ -188,25 +203,25 @@ struct SessionControlSheet: View {
                     HoldToConfirmButton(
                         icon: "xmark",
                         size: 70,
-                        holdDuration: 2.0,
+                        holdDuration: 1,
                         background: buttonBackground,
                         foreground: buttonForeground,
                         progressColor: activityColor
                     ) {
                         onEnd()
                     }
-                    
+
                     HoldToConfirmButton(
                         icon: isPaused ? "play.fill" : "pause",
                         size: 90,
-                        holdDuration: 2.0,
+                        holdDuration: 1,
                         background: buttonBackground,
                         foreground: buttonForeground,
                         progressColor: activityColor
                     ) {
                         onPause()
                     }
-                    
+
                     HoldToConfirmButton(
                         icon: "lock.fill",
                         size: 70,
@@ -221,7 +236,7 @@ struct SessionControlSheet: View {
                     }
                 }
             }
-            
+
             Spacer()
         }
         .frame(height: 220)
@@ -244,6 +259,7 @@ struct SessionControlSheet: View {
                 elapsedTime: 7.75,
                 ringProgress: 0.15,
                 isPaused: false,
+                isMuted: .constant(false),
                 onPause: {},
                 onEnd: {}
             )

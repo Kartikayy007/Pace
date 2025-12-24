@@ -72,7 +72,7 @@ struct ActiveSessionView: View {
 
     var body: some View {
         ZStack {
-            
+
             TabView(selection: $selectedPage) {
 
                 ZStack {
@@ -93,7 +93,6 @@ struct ActiveSessionView: View {
                         updateMapCamera(for: newRoute)
                     }
 
-                    
                     LinearGradient(
                         colors: [
                             backgroundColor,
@@ -111,7 +110,6 @@ struct ActiveSessionView: View {
                 }
                 .tag(0)
 
-                
                 ZStack {
                     backgroundColor.ignoresSafeArea()
                     VStack(spacing: 16) {
@@ -130,9 +128,7 @@ struct ActiveSessionView: View {
                     .offset(y: -40)
                 }
                 .tag(1)
-                
 
-                
                 ZStack {
                     backgroundColor.ignoresSafeArea()
                     VStack(spacing: 16) {
@@ -174,7 +170,6 @@ struct ActiveSessionView: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
             .ignoresSafeArea()
 
-            
             VStack(spacing: 0) {
                 HStack(spacing: 0) {
                     SessionMetricCard(
@@ -192,7 +187,6 @@ struct ActiveSessionView: View {
 
                 Spacer()
 
-                
                 HStack(spacing: 8) {
                     ForEach(0..<3, id: \.self) { index in
                         Circle()
@@ -217,6 +211,7 @@ struct ActiveSessionView: View {
                 elapsedTime: viewModel.elapsedTime,
                 ringProgress: viewModel.ringProgress,
                 isPaused: isPaused,
+                isMuted: $viewModel.isAnnouncementsMuted,
                 onPause: {
                     let generator = UIImpactFeedbackGenerator(style: .medium)
                     generator.impactOccurred()
