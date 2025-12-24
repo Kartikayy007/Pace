@@ -92,11 +92,7 @@
 
 <div align="center">
 
-https://github.com/user-attachments/assets/ScreenRecording_12-25-2025_02-59-31_1_compressed.mp4
-
-<video src="Doc/ScreenRecording_12-25-2025 02-59-31_1_compressed.mp4" width="300" controls>
-  Your browser does not support the video tag.
-</video>
+https://github.com/Kartikayy007/Pace/raw/main/Doc/ScreenRecording_12-25-2025%2002-59-31_1_compressed.mp4
 
 *Watch Pace in action! 🏃‍♂️*
 
