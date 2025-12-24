@@ -468,15 +468,21 @@ struct WorkoutStatsCalculator {
 
     private static func calculateRouteSegments(from locations: [CLLocation]) -> [RouteSegment] {
         guard locations.count >= 2 else { return [] }
-        let simplifiedLocations = RouteSmoothing.douglasPeucker(locations: locations, epsilon: 3.0)
-        let smoothedLocations = RouteSmoothing.movingAverage(
-            locations: simplifiedLocations, windowSize: 3)
 
+        // using raw coordinates without smoothing
+        let finalLocations = locations
+
+        /*
+        let simplifiedLocations = RouteSmoothing.douglasPeucker(locations: locations, epsilon: 5.0)
+        let smoothedLocations = RouteSmoothing.movingAverage(
+            locations: simplifiedLocations, windowSize: 5)
+        
         let finalLocations = RouteSmoothing.catmullRomSpline(
             locations: smoothedLocations,
-            pointsPerSegment: 8,
+            pointsPerSegment: 12,
             alpha: 0.5
         )
+        */
 
         guard finalLocations.count >= 2 else { return [] }
 
